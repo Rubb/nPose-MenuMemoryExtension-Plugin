@@ -8,41 +8,40 @@ The nPose scripts are free to be copied, modified, and redistributed, subject to
 "Full perms" means having the modify, copy, and transfer permissions enabled in Second Life and/or other virtual world platforms derived from Second Life (such as OpenSim).  If the platform should allow more fine-grained permissions, then "full perms" will mean the most permissive possible set of permissions allowed by the platform.
 */
 
-#define DEFAULT_PREFIX "SET"
+string DEFAULT_PREFIX="SET";
 
-#define NC_READER_REQUEST 224
-#define NC_READER_RESPONSE 225
-#define PREPARE_MENU_STEP2 -821
-#define PLUGIN_ACTION -830
-#define PLUGIN_MENU -832
-#define PLUGIN_MENU_DONE -833
+integer NC_READER_REQUEST=224;
+integer NC_READER_RESPONSE=225;
+integer PREPARE_MENU_STEP2=-821;
+integer PLUGIN_ACTION=-830;
+integer PLUGIN_MENU=-832;
+integer PLUGIN_MENU_DONE=-833;
 
-#define MEMORY_USAGE 34334
+integer MEMORY_USAGE=34334;
 
 //NC Reader
-#define NC_READER_CONTENT_SEPARATOR "%&§"
+string NC_READER_CONTENT_SEPARATOR="%&§";
 
 //own plugins related
-#define NPOSE_PLUGIN_MENU "npose_menu"
-#define MME_PLUGIN_MENU_NAME "npose_mme"
-#define MME_PLUGIN_SCRIPT_NAME "nPose MenuMemoryExtension Plugin"
+string NPOSE_PLUGIN_MENU="npose_menu";
+string MME_PLUGIN_MENU_NAME="npose_mme";
+string MME_PLUGIN_SCRIPT_NAME="nPose MenuMemoryExtension Plugin";
 
 //store plugins base paths
 list MmePluginBasePathList;
 list MmePluginWorkerNumberList;
 
-string MenuNc = ".Change Menu Order"; //holds the name of the menu order notecard to read.
-string MmeNc =".nPose MenuMemoryExtension"; //holds the name of the nPose MenuMemoryExtension configuration NC
+string NC_NAME_MENU = ".Change Menu Order"; //holds the name of the menu order notecard to read.
+string NC_NAME_MME =".nPose MenuMemoryExtension"; //holds the name of the nPose MenuMemoryExtension configuration NC
 
 list MenuPaths;
 list MenuButtons;
-
-key ScriptId;
 
 integer UseMme; //MenuMemoryExtension
 integer UseChangeMenuOrder;
 integer MyWorkerNumber;
 string MyPluginMenuName;
+string MyScriptName;
 
 
 integer TotalNumberOfValidCards; //only for your info
@@ -52,7 +51,6 @@ debug(list message){
     llOwnerSay((((llGetScriptName() + "\n##########\n#>") + llDumpList2String(message,"\n#>")) + "\n##########"));
 }
 */
-
 list getButtons(string path, list additionalButtons) {
     list choices;
     integer index = llListFindList(MenuPaths, [path]);
@@ -178,9 +176,9 @@ init() {
     TotalNumberOfStoredCards=0;
 
     //check if the script has a proper name
-    string myScriptName=llGetScriptName();
-    if(llSubStringIndex(myScriptName, MME_PLUGIN_SCRIPT_NAME)) {
-        llOwnerSay("Error: The name of the script \"" + myScriptName + "\" must begin with \"" + MME_PLUGIN_SCRIPT_NAME + "\".");
+    MyScriptName=llGetScriptName();
+    if(llSubStringIndex(MyScriptName, MME_PLUGIN_SCRIPT_NAME)) {
+        llOwnerSay("Error: The name of the script \"" + MyScriptName + "\" must begin with \"" + MME_PLUGIN_SCRIPT_NAME + "\".");
         return;
     }
     //get the worker number
@@ -191,7 +189,7 @@ init() {
         string currentName=llGetInventoryName(INVENTORY_SCRIPT, index);
         if(!llSubStringIndex(currentName, MME_PLUGIN_SCRIPT_NAME)) {
             currentWorkerNumber++;
-            if(currentName == myScriptName) {
+            if(currentName == MyScriptName) {
                 MyWorkerNumber=currentWorkerNumber;
                 MyPluginMenuName=MME_PLUGIN_MENU_NAME + (string)currentWorkerNumber;
                 index=length;
@@ -199,23 +197,22 @@ init() {
         }
     }
     //check if the configuration NC does exists
-    UseMme=llGetInventoryType(MmeNc)==INVENTORY_NOTECARD;
+    UseMme=llGetInventoryType(NC_NAME_MME)==INVENTORY_NOTECARD;
     if(!UseMme) {
-        llOwnerSay("To make use of the " + MME_PLUGIN_SCRIPT_NAME + " you need a configuration notecard with the name: " + MmeNc);
+        llOwnerSay("To make use of the " + MME_PLUGIN_SCRIPT_NAME + " you need a configuration notecard with the name: " + NC_NAME_MME);
         return;
     }
 
-    UseChangeMenuOrder=llGetInventoryType(MenuNc)==INVENTORY_NOTECARD;
-    ScriptId=llGetInventoryKey(myScriptName);
+    UseChangeMenuOrder=llGetInventoryType(NC_NAME_MENU)==INVENTORY_NOTECARD;
     //Notice: the MenuMemoryExtension does not work (well) if you also use the ".Change Menu Order" mechanism
     //My point of view (Leona): avoid the ".Change Menu Order" and use Button Comments to sort the menu manually
     if(UseMme || UseChangeMenuOrder) {
         llSleep(1.5); //be sure that the NC reader script finished resetting
         if(UseMme) {
-            llMessageLinked(LINK_SET, NC_READER_REQUEST, MmeNc, ScriptId);
+            llMessageLinked(LINK_SET, NC_READER_REQUEST, NC_NAME_MME, MyScriptName);
         }
         if(UseChangeMenuOrder) {
-            llMessageLinked(LINK_SET, NC_READER_REQUEST, MenuNc, ScriptId);
+            llMessageLinked(LINK_SET, NC_READER_REQUEST, NC_NAME_MENU, MyScriptName);
         }
     }
     else {
@@ -268,8 +265,8 @@ default{
         }
 //begin handle link message inputs
         else if(num == NC_READER_RESPONSE) {
-            if(id==ScriptId) {
-                if(!llSubStringIndex(str, MenuNc)) {
+            if((string)id==MyScriptName) {
+                if(!llSubStringIndex(str, NC_NAME_MENU)) {
                     //Change Menu Order
                     BuildMenus(llList2List(llParseStringKeepNulls(str, [NC_READER_CONTENT_SEPARATOR], []), 3, -1));
                     str = "";
